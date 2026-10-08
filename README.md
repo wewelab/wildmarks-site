@@ -1,22 +1,22 @@
 # wildmarks.net
 
-Static marketing site for Wildmarks, served by GitHub Pages at
-https://wildmarks.net.
+Static site for Wildmarks, served by GitHub Pages at https://wildmarks.net.
+One page, one font, no images beyond the logo and the social preview.
 
-## Layout
+## Files
 
-- `index.html` — the single page
+- `index.html` — the page
 - `404.html` — not-found page
-- `assets/css/site.css`, `assets/js/site.js` — styles and a tiny script
-  (mobile menu, reveal-on-scroll)
-- `assets/img/` — optimized captures and item art
+- `assets/css/site.css` — styles
+- `assets/img/og.png` — social preview card
+- `favicon.svg` — logo mark
 - `CNAME` — custom domain for GitHub Pages
 - `.nojekyll` — serve files as-is
 
 ## Deploy
 
-Push to `main`. GitHub Pages is configured to serve from the `main`
-branch root. The `CNAME` file binds the custom domain.
+Push to `main`. GitHub Pages serves from the `main` branch root; the
+`CNAME` file binds the custom domain.
 
 DNS (Cloudflare, DNS-only / grey cloud):
 
@@ -30,8 +30,3 @@ CNAME www  <github-username>.github.io
 
 After DNS resolves, enable "Enforce HTTPS" in the repository's Pages
 settings.
-
-## Updating images
-
-Source captures live in the Unity project. Re-export with Pillow at
-1920 px (hero), 1400 px (gallery) and 520 px WebP (gear icons).
