@@ -1,32 +1,23 @@
 # wildmarks.net
 
-Static site for Wildmarks, served by GitHub Pages at https://wildmarks.net.
-One page, one font, no images beyond the logo and the social preview.
+Static site for Wildmarks. One page, one font, no build step.
 
 ## Files
 
 - `index.html` — the page
 - `404.html` — not-found page
 - `assets/css/site.css` — styles
-- `assets/img/og.png` — social preview card
-- `favicon.svg` — logo mark
-- `CNAME` — custom domain for GitHub Pages
-- `.nojekyll` — serve files as-is
+- `assets/img/` — logo, favicons, social preview card
+- `_headers` — cache and security headers for Cloudflare Pages
 
-## Deploy
+## Deploy (Cloudflare Pages)
 
-Push to `main`. GitHub Pages serves from the `main` branch root; the
-`CNAME` file binds the custom domain.
+Connect this repository in Cloudflare Pages:
 
-DNS (Cloudflare, DNS-only / grey cloud):
+- Framework preset: None
+- Build command: leave empty
+- Build output directory: `/`
 
-```
-A     @    185.199.108.153
-A     @    185.199.109.153
-A     @    185.199.110.153
-A     @    185.199.111.153
-CNAME www  <github-username>.github.io
-```
-
-After DNS resolves, enable "Enforce HTTPS" in the repository's Pages
-settings.
+Every push to `main` deploys. Add `wildmarks.net` under Custom domains;
+Cloudflare creates the DNS records itself because the zone is already
+on Cloudflare.
