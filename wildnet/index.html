@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>WildNet — Wildmarks</title>
-  <meta name="description" content="WildNet is the server-authoritative game engine underneath Wildmarks: in-memory tables, a commit log, transactional reducers, live subscriptions, sharding and replication. Written in Rust, 782 tests.">
+  <meta name="description" content="WildNet is the server-authoritative game engine underneath Wildmarks: in-memory tables, a commit log, transactional reducers, live subscriptions, sharding and replication. Written in Rust, 782 tests, measured head to head.">
   <meta name="theme-color" content="#0a0a0a">
   <link rel="canonical" href="https://wildmarks.net/wildnet/">
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/favicon-64.png">
@@ -13,7 +13,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Wildmarks">
   <meta property="og:title" content="WildNet — the engine under Wildmarks">
-  <meta property="og:description" content="A server-authoritative game engine written in Rust. How it works, what has been measured, what the 782 tests check.">
+  <meta property="og:description" content="A server-authoritative game engine written in Rust. How it works, what it has achieved, what the 782 tests check, and where it is going.">
   <meta property="og:url" content="https://wildmarks.net/wildnet/">
   <meta property="og:image" content="https://wildmarks.net/assets/img/og.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -43,7 +43,7 @@
   <section class="title">
     <p class="label">WildNet</p>
     <h1>The server underneath Wildmarks.</h1>
-    <p class="sub">A game server and network engine we wrote for one game, in Rust. This page explains why it exists, how it works, what has been measured so far, and what the test suite actually checks.</p>
+    <p class="sub">A game server and network engine we wrote for one game, in Rust. This page explains why it exists, how it works, what it has achieved so far, what the test suite checks, and where it is going.</p>
   </section>
 
   <section class="row" id="why">
@@ -135,14 +135,40 @@
     </div>
   </section>
 
-  <section class="row" id="measured">
-    <p class="label">What has been measured</p>
+  <section class="row" id="compare">
+    <p class="label">Head to head</p>
     <div class="body">
-      <p>These are results from our own load generator over the real wire protocol, on a local release build unless noted. None of them is a capacity promise. The envelope they use was chosen as a reproducible test, and it will be replaced by numbers from the game itself once a real zone population and event mix exist.</p>
+      <p>In August 2026 we rented a dedicated 8-core host and ran WildNet against an established commercial engine of the same kind, with the same client harness, the same scenarios, and the same byte-level wire format on both sides. Each backend ran alone on the machine, with a fresh process and fresh data per repetition. The figures are medians of three repetitions.</p>
+      <table class="compare">
+        <thead><tr><th>Measure</th><th>WildNet</th><th>The other engine</th></tr></thead>
+        <tbody>
+          <tr><td>Movement latency, p50, 100 to 500 bots</td><td>0.3 ms</td><td>1.7 to 2.5 ms</td></tr>
+          <tr><td>Movement latency, p99 at 500 bots</td><td>1.9 ms</td><td>19.8 ms</td></tr>
+          <tr><td>Paced throughput, 100 to 500 bots</td><td>546 to 2,725 tx/s</td><td>510 to 2,006 tx/s</td></tr>
+          <tr><td>Saturation throughput</td><td>29,400 to 30,100 tx/s</td><td>3,300 to 4,400 tx/s</td></tr>
+          <tr><td>Wire bytes per operation</td><td>188 to 224 B</td><td>263 to 358 B</td></tr>
+          <tr><td>Dense combat, 200 bots on 1,000 items, p50 / p95</td><td>5.3 / 8.2 ms</td><td>18.7 / 20.8 ms</td></tr>
+          <tr><td>Dense combat, server CPU / peak memory</td><td>79% / 207 MB</td><td>136% / 415 MB</td></tr>
+          <tr><td>Retry after an abrupt process kill, wire per call</td><td>1,843 B</td><td>3,328 B</td></tr>
+          <tr><td>Saturation with every table durable</td><td>11,431 tx/s</td><td>4,023 tx/s</td></tr>
+          <tr><td>60-minute soak, server CPU average</td><td>3.2%</td><td>11.3%</td></tr>
+          <tr><td>60-minute soak, movement p95, first and last half</td><td>1.1 → 1.1 ms</td><td>2.5 → 2.4 ms</td></tr>
+          <tr><td>600,000 contested loot attempts</td><td>1,000 owners, 0 duplicates</td><td>1,000 owners, 0 duplicates</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="3">Ahead on every criterion of the short matrix, with equal correctness. The latency stayed flat from 100 to 500 bots; the other engine's p99 climbed tenfold over the same ladder.</td></tr></tfoot>
+      </table>
+      <p>The report also records two things against us, and we would rather state them than smooth them over. During the one-hour soak our memory grew by about 1 MB per minute, from the exactly-once operation ledger retaining an hour of loot commits; the growth is bounded by design, and a separate retention test the same day showed the plateau. And at the soak's gentle pace we moved more bytes on the wire than the other engine, because each result went out as its own socket write; a later measurement confirmed the cause and found no batch worth taking at that rate.</p>
+    </div>
+  </section>
+
+  <section class="row" id="measured">
+    <p class="label">Game workload</p>
+    <div class="body">
+      <p>Beyond the head-to-head, our own load generator drives the engine over the real wire with workloads shaped like Wildmarks. None of these is a capacity promise; the envelope was chosen as a reproducible test and will be replaced by numbers from the game itself.</p>
       <dl class="measure">
         <div>
           <dt>75-cycle long run</dt>
-          <dd>108,000 movement events and 43,200 combat events delivered exactly once, in order, with every one of 3,600 durable results replayed unchanged after reconnect. Zero admission, backpressure or durability failures were sampled during the run.</dd>
+          <dd>108,000 movement events and 43,200 combat events delivered exactly once, in order, with every one of 3,600 durable results replayed unchanged after reconnect. Zero admission, backpressure or durability failures sampled during the run.</dd>
         </div>
         <div>
           <dt>Contested loot</dt>
@@ -160,11 +186,21 @@
           <dt>Players per zone</dt>
           <dd>500 to 800 concurrent players per zone on one server, measured with the original benchmark harness. Beyond that, the answer is another shard, not a bigger box.</dd>
         </div>
-        <div>
-          <dt>Comparison</dt>
-          <dd>On dedicated hardware, the Rust engine finished ahead of the external engine we had been measuring against, on the game's own benchmark, across the controlled short matrix. That exam is what moved the project from "a rewrite" to "the engine".</dd>
-        </div>
       </dl>
+    </div>
+  </section>
+
+  <section class="row" id="done">
+    <p class="label">What has been done</p>
+    <div class="body">
+      <ul class="dated">
+        <li><time>5 Aug 2026</time><p><strong>The rewrite begins.</strong> WildNet existed in C#. The Rust rewrite started from an empty repository with one rule: every slice ends with the original's regression tests green against the new engine, byte for byte on the wire.</p></li>
+        <li><time>8 Aug 2026</time><p><strong>Full parity.</strong> The Rust engine matched the original on every milestone, all 24 hardening slices and the 15-slice replicated-log arc, with 666 tests passing. From this day the Rust engine is WildNet.</p></li>
+        <li><time>9 Aug 2026</time><p><strong>The head-to-head.</strong> On dedicated hardware, ahead on every criterion of the short matrix against an established engine, with equal correctness over 600,000 contested attempts and 2,400 abrupt-kill retries.</p></li>
+        <li><time>9 Aug 2026</time><p><strong>Five layers of game workload.</strong> Movement, zoned handover, durable loot and reconnect; combat fan-out with contested loot; a 75-cycle long run with CPU and memory observation; the slow-peer isolation curve; the paced delivery-latency objective. All exact.</p></li>
+        <li><time>9 Aug 2026</time><p><strong>Memory plateau proven.</strong> The ledger growth flagged in the soak was reproduced in a targeted retention test, shown to plateau, and then hardened.</p></li>
+        <li><time>9–10 Sep 2026</time><p><strong>Every line read.</strong> All 87 source files were reviewed line by line. The defects that turned up, in witness persistence, snapshot cancellation, replication receive bounds and handover retry timing, were fixed with regression tests that failed before and pass after. The full suite was green at the close, none ignored.</p></li>
+      </ul>
     </div>
   </section>
 
@@ -256,11 +292,19 @@
     </div>
   </section>
 
-  <section class="row" id="status">
-    <p class="label">Where it stands</p>
+  <section class="row" id="goals">
+    <p class="label">What we are going for</p>
     <div class="body">
-      <p>WildNet began in C# and was rewritten in Rust during the summer of 2026. The Rust engine reached full parity with the original on 8 August 2026, including the replicated log, and has been the engine since. The C# client SDK is still used as a test instrument: the Rust server has to speak to it unchanged, which is how the wire format is kept honest.</p>
-      <p>Since parity, the work has been driven by the game's own load shape: ownership fencing, the replication-on performance ladder, and five layers of game workload that now cover movement, handover, durable loot, combat fan-out and delivery latency. The next input is a real trace from Wildmarks itself, which will replace the provisional envelope above with measured requirements.</p>
+      <p>The numbers above come from a provisional envelope and a one-hour soak. The goals below are the ones we will hold ourselves to, each with a measurement that can fail.</p>
+      <ol class="goals">
+        <li><p><strong>Real traces instead of a guessed envelope.</strong> Zone population, event rates, payload sizes and acceptable lag taken from Wildmarks playtests, replacing every provisional default in the load generator.</p></li>
+        <li><p><strong>A thousand players in one zone, under a millisecond.</strong> Movement p50 below 1 ms and p99 below 5 ms at 1,000 or more concurrent players in a zone, held across several hosts rather than one process.</p></li>
+        <li><p><strong>Handover a player cannot feel.</strong> Crossing between hosts with no visible stall and no durable state lost, measured at the client, including when the target host refuses or the source dies mid-exchange.</p></li>
+        <li><p><strong>Replication on by default.</strong> A replica within a bounded lag at the measured game load, and a failover that loses no committed operation.</p></li>
+        <li><p><strong>Days, not an hour.</strong> Multi-day soaks with flat memory, zero failures and exact conservation, so the ledger plateau is observed rather than argued.</p></li>
+        <li><p><strong>Recovery in seconds.</strong> Restart from snapshot and log to a consistent world, timed on the real world size, with a bound we publish.</p></li>
+        <li><p><strong>Ship Wildmarks on it.</strong> The first playable slice of the game on this engine, then closed playtests, with the engine's numbers reported from real sessions.</p></li>
+      </ol>
     </div>
   </section>
 
