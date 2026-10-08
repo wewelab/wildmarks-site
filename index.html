@@ -32,7 +32,8 @@
   </a>
   <nav>
     <a href="#world">World</a>
-    <a href="#engine">Engine</a>
+    <a href="#play">Play</a>
+    <a href="/wildnet/">WildNet</a>
     <a href="mailto:support@wildmarks.net">Contact</a>
   </nav>
 </header>
@@ -46,56 +47,60 @@
     <p class="sub">Hunt what the broken seals made. Claim gear no smith can forge. Make your own name in dangerous country.</p>
   </section>
 
-  <section id="world">
+  <section class="row" id="world">
     <p class="label">The world</p>
-    <p><strong>The Marks.</strong> The old continent built its power on ancient seals that bound weapons, walls and tools to the unseen currents of the world. Every region kept its own tradition, and none of them could speak to the others.</p>
-    <p><strong>The Arkenmark.</strong> The great powers forged one seal to govern all the rest and end the Mark wars. Instead, it severed every binding that kept the old Marks in check. Their power did not disappear. It became ownerless.</p>
-    <p><strong>The Markfall.</strong> Broken Marks entered the soil and the water, gathered in mines, and changed the creatures that lived near them. Roads failed. Cities were cut off. That was two hundred years ago, and the world is still rebuilding on the ruins.</p>
-    <p class="quiet">Can power truly be controlled? The old world said yes.</p>
+    <div class="body">
+      <p><strong>The Marks.</strong> The old continent built its power on ancient seals that bound weapons, walls and tools to the unseen currents of the world. Every region kept its own tradition, and none of them could speak to the others.</p>
+      <p><strong>The Arkenmark.</strong> The great powers forged one seal to govern all the rest and end the Mark wars. Instead, it severed every binding that kept the old Marks in check. Their power did not disappear. It became ownerless.</p>
+      <p><strong>The Markfall.</strong> Broken Marks entered the soil and the water, gathered in mines, and changed the creatures that lived near them. Roads failed. Cities were cut off. That was two hundred years ago, and the world is still rebuilding on the ruins.</p>
+      <p class="quiet">Can power truly be controlled? The old world said yes.</p>
+    </div>
   </section>
 
-  <section id="play">
+  <section class="row" id="play">
     <p class="label">What you do</p>
-    <ul class="list">
-      <li><strong>Hunt.</strong> Track the creatures the Markfall left behind and bring down the ones worth the risk.</li>
-      <li><strong>Claim.</strong> Wildmarked gear comes only from the hunt. It is never crafted, and always tradable.</li>
-      <li><strong>Recover.</strong> Ruins and waystones still hold relics of the old world. Someone always pays well.</li>
-      <li><strong>Trade.</strong> No social score. Your name is whatever your deals and your rivals remember.</li>
-      <li><strong>Form up.</strong> Parties and guilds for the dangerous grounds. Combat is settled on the server.</li>
-      <li><strong>Keep walking.</strong> One continent, streamed around you, with no loading screen between regions.</li>
-    </ul>
-    <p class="quiet">You are not the chosen one. Nobody is.</p>
+    <div class="body">
+      <ul class="list">
+        <li><strong>Hunt.</strong> Track the creatures the Markfall left behind and bring down the ones worth the risk.</li>
+        <li><strong>Claim.</strong> Wildmarked gear comes only from the hunt. It is never crafted, and always tradable.</li>
+        <li><strong>Recover.</strong> Ruins and waystones still hold relics of the old world. Someone always pays well.</li>
+        <li><strong>Trade.</strong> No social score. Your name is whatever your deals and your rivals remember.</li>
+        <li><strong>Form up.</strong> Parties and guilds for the dangerous grounds. Combat is settled on the server.</li>
+        <li><strong>Keep walking.</strong> One continent, streamed around you, with no loading screen between regions.</li>
+      </ul>
+      <p class="quiet">You are not the chosen one. Nobody is.</p>
+    </div>
   </section>
 
-  <section id="engine">
+  <section class="row" id="engine">
     <p class="label">The engine</p>
-    <p>Wildmarks runs on WildNet, a backend and network engine we build in-house, inspired by SpacetimeDB. The server is authoritative. State changes only through transactional reducers written to a commit log, and each client receives exactly the slice of the world it can see.</p>
-    <p>WildNetRust is its Rust rewrite: the same wire protocol, with sharded hosts, live handover between shards, and signed log replication.</p>
-    <dl class="facts">
-      <div><dt>Movement</dt><dd>10 Hz, ephemeral</dd></div>
-      <div><dt>Durable state</dt><dd>Reducers, append-only commit log</dd></div>
-      <div><dt>Interest</dt><dd>32 m cells, 7 × 7 window</dd></div>
-      <div><dt>Capacity</dt><dd>500–800 players per zone, measured</dd></div>
-      <div><dt>Tests</dt><dd>780+ automated</dd></div>
-    </dl>
+    <div class="body">
+      <p>Wildmarks runs on WildNet, a game server we wrote ourselves. The server holds the world in memory, writes every durable change to a log before it answers, and sends each player only the part of the world they can see. Items cannot be duplicated, a crash cannot lose loot, and nothing the client says is trusted.</p>
+      <p>It is written in Rust, split into ten crates, and covered by 782 tests. There is a separate page on how it works, what has been measured, and what each test suite checks.</p>
+      <a class="more" href="/wildnet/">About WildNet</a>
+    </div>
   </section>
 
-  <section id="studio">
+  <section class="row" id="studio">
     <p class="label">The studio</p>
-    <p>Wildmarks is made by an independent studio. The developer directs; AI agents write the code, with Claude Code orchestrating the work. Every change is reviewed, every commit passes the quality gates, and nothing is done without green tests.</p>
-    <p class="quiet">Now: art direction, the combat loop, the starter area. Next: the first playable slice.</p>
+    <div class="body">
+      <p>Wildmarks is made by an independent studio. The developer directs; AI agents write the code, with Claude Code orchestrating the work. Changes are reviewed before they land, the build, lint and test gates run on every commit, and a step that does not pass its tests is not called done.</p>
+      <p class="quiet">Now: art direction, the combat loop, the starter area. Next: the first playable slice.</p>
+    </div>
   </section>
 
-  <section id="contact">
+  <section class="row" id="contact">
     <p class="label">Contact</p>
-    <a class="mail" href="mailto:support@wildmarks.net">support@wildmarks.net</a>
+    <div class="body">
+      <a class="mail" href="mailto:support@wildmarks.net">support@wildmarks.net</a>
+    </div>
   </section>
 
 </main>
 
 <footer>
   <p>© 2026 Wildmarks</p>
-  <p>WildNet and WildNetRust are in-house technology.</p>
+  <p><a href="/wildnet/">WildNet</a> is in-house technology.</p>
 </footer>
 
 </body>

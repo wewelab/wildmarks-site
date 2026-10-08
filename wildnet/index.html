@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WildNet — Wildmarks</title>
+  <meta name="description" content="WildNet is the server-authoritative game engine underneath Wildmarks: in-memory tables, a commit log, transactional reducers, live subscriptions, sharding and replication. Written in Rust, 782 tests.">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="canonical" href="https://wildmarks.net/wildnet/">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/favicon-64.png">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Wildmarks">
+  <meta property="og:title" content="WildNet — the engine under Wildmarks">
+  <meta property="og:description" content="A server-authoritative game engine written in Rust. How it works, what has been measured, what the 782 tests check.">
+  <meta property="og:url" content="https://wildmarks.net/wildnet/">
+  <meta property="og:image" content="https://wildmarks.net/assets/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="/" aria-label="Wildmarks">
+    <img src="/assets/img/wildmarks-mark.png" alt="" width="24" height="26">
+    <span>Wildmarks</span>
+  </a>
+  <nav>
+    <a href="/#world">World</a>
+    <a href="/#play">Play</a>
+    <a href="/wildnet/" aria-current="page">WildNet</a>
+    <a href="mailto:support@wildmarks.net">Contact</a>
+  </nav>
+</header>
+
+<main>
+
+  <section class="title">
+    <p class="label">WildNet</p>
+    <h1>The server underneath Wildmarks.</h1>
+    <p class="sub">A game server and network engine we wrote for one game, in Rust. This page explains why it exists, how it works, what has been measured so far, and what the test suite actually checks.</p>
+  </section>
+
+  <section class="row" id="why">
+    <p class="label">Why we built it</p>
+    <div class="body">
+      <p>An online world has one hard requirement that most software does not: hundreds of people act on the same state at the same time, and all of them have to agree on what happened. A sword that drops for two players is a bug that ruins an economy. A chest that empties after a crash is a bug that ruins trust. A client that can tell the server where it is standing is a cheat waiting to be written.</p>
+      <p>We wanted a server that makes those bugs impossible by construction instead of catching them case by case. That meant three decisions up front: the server is the only authority, every durable change is written to a log before the server answers, and the world is streamed to each player by what they can see rather than by what they ask for. Off-the-shelf servers each gave up one of those, or priced the fix as a service. So WildNet is ours, and it is shaped by Wildmarks rather than the other way round.</p>
+      <p>The engine contains no game rules. Accounts, combat, loot, chat and progression live in the game's own server module on top of it. WildNet only knows about tables, reducers, subscriptions and the wire.</p>
+    </div>
+  </section>
+
+  <section class="row" id="model">
+    <p class="label">How it works</p>
+    <div class="body">
+      <div class="parts">
+        <div>
+          <h3>Tables in memory</h3>
+          <p>The world is a set of typed tables with primary and secondary indexes, held in memory. Reads never wait on disk.</p>
+        </div>
+        <div>
+          <h3>Reducers</h3>
+          <p>A client never writes a row. It asks for a named command, a reducer, which runs on a single writer thread, sees who sent it, and either commits all of its changes or none of them.</p>
+        </div>
+        <div>
+          <h3>The commit log</h3>
+          <p>Every committed transaction is appended to a log on disk before the client gets its answer. On restart the engine replays the log and arrives at the same world. A torn write at the tail is truncated, not guessed at.</p>
+        </div>
+        <div>
+          <h3>Subscriptions</h3>
+          <p>Clients subscribe to standing queries over a WebSocket. After each transaction they receive only the rows that changed inside their query, not a fresh copy of the table.</p>
+        </div>
+        <div>
+          <h3>Interest windows</h3>
+          <p>Space is divided into 32 m cells. A player's window is 7 by 7 cells around them and moves with them, so a client only receives the part of the zone it could see.</p>
+        </div>
+        <div>
+          <h3>Two planes</h3>
+          <p>Position updates are ephemeral: streamed at 10 Hz, never logged. Loot, inventory and progress are durable: logged, replayed, and kept across restarts. Mixing the two is the usual way a game server becomes slow or lossy.</p>
+        </div>
+        <div>
+          <h3>Event streams</h3>
+          <p>Combat hits, chat lines and other things that need to be seen once and not stored go through transient streams with per-identity rate limits and a bounded send queue per connection.</p>
+        </div>
+        <div>
+          <h3>Identity and admission</h3>
+          <p>Identity comes from a signed token bound to the connection, never from a field the client fills in. An admission gate decides what each connection may do before any reducer runs.</p>
+        </div>
+        <div>
+          <h3>Exactly-once operations</h3>
+          <p>Each durable operation carries an id. A client that reconnects and retries gets the original result from a ledger instead of running the reducer again. A claimed chest stays claimed.</p>
+        </div>
+        <div>
+          <h3>Scheduled reducers</h3>
+          <p>The engine can run a reducer at a time or on a cycle, so respawns and timers are server state rather than client timers.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row" id="scale">
+    <p class="label">Scaling and failure</p>
+    <div class="body">
+      <div class="parts">
+        <div>
+          <h3>Sharded hosts</h3>
+          <p>One process can own several shards of the world, and several processes can share one world. Ownership of a shard is fenced: a host that lost ownership cannot keep writing.</p>
+        </div>
+        <div>
+          <h3>Live handover</h3>
+          <p>A player crossing a shard boundary is handed from one host to another with their durable state, over a signed exchange with explicit refusals and retry cooldowns. The client sees one continent.</p>
+        </div>
+        <div>
+          <h3>Replicated log</h3>
+          <p>The commit log can be replicated to a second host over a signed endpoint. The replica acknowledges, reports lag, and refuses writes from a host that no longer holds ownership.</p>
+        </div>
+        <div>
+          <h3>Control plane</h3>
+          <p>Shard ownership and host liveness are recorded in an external key-value store with compare-and-set, with a local witness that persists its own view so a host can answer quickly and still defer to the authority.</p>
+        </div>
+        <div>
+          <h3>Snapshots and compaction</h3>
+          <p>The log is periodically checkpointed into a snapshot so recovery does not replay from the beginning. Failed snapshots clean up after themselves, including when cancelled mid-write.</p>
+        </div>
+        <div>
+          <h3>Schema migration</h3>
+          <p>A log written by an older schema reopens under the new one. Old durable character logs from the game's early builds still load in tests.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row" id="measured">
+    <p class="label">What has been measured</p>
+    <div class="body">
+      <p>These are results from our own load generator over the real wire protocol, on a local release build unless noted. None of them is a capacity promise. The envelope they use was chosen as a reproducible test, and it will be replaced by numbers from the game itself once a real zone population and event mix exist.</p>
+      <dl class="measure">
+        <div>
+          <dt>75-cycle long run</dt>
+          <dd>108,000 movement events and 43,200 combat events delivered exactly once, in order, with every one of 3,600 durable results replayed unchanged after reconnect. Zero admission, backpressure or durability failures were sampled during the run.</dd>
+        </div>
+        <div>
+          <dt>Contested loot</dt>
+          <dd>Every shared item had exactly one winner. Every loser received an explicit "already claimed". Both outcomes replayed identically after reconnect without running the reducer body again, and the final snapshot matched every winner.</dd>
+        </div>
+        <div>
+          <dt>Slow-peer isolation</dt>
+          <dd>With one subscriber fully stalled, a healthy subscriber in the same zone stayed exact. The stalled peer was cut off between 8,840 and 8,976 publications against the default 4,096-message guard, and nobody else noticed.</dd>
+        </div>
+        <div>
+          <dt>Fan-out latency</dt>
+          <dd>32 publishers in one zone at 10 combat events per second each, for 15 seconds, with an observer draining at a fixed rate. Delivery stayed exact at every point. At a 320 events/s drain the p95 publish-to-delivery latency met a 250 ms objective; at 280 events/s it first failed, with a 614-event backlog and every server guard still at zero.</dd>
+        </div>
+        <div>
+          <dt>Players per zone</dt>
+          <dd>500 to 800 concurrent players per zone on one server, measured with the original benchmark harness. Beyond that, the answer is another shard, not a bigger box.</dd>
+        </div>
+        <div>
+          <dt>Comparison</dt>
+          <dd>On dedicated hardware, the Rust engine finished ahead of the external engine we had been measuring against, on the game's own benchmark, across the controlled short matrix. That exam is what moved the project from "a rewrite" to "the engine".</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="row" id="tests">
+    <p class="label">Tests</p>
+    <div class="body">
+      <p>Every change runs the formatter, the linter on all targets, a build, and the whole suite. The counts below were taken from the source tree on 8 October 2026. Each group is one crate; the rows are its integration suites, and the group total also includes the unit tests inside the crate.</p>
+
+      <dl class="suite-summary">
+        <div><dt>Test functions</dt><dd>782</dd></div>
+        <div><dt>Crates</dt><dd>10</dd></div>
+        <div><dt>Lines of tests</dt><dd>45,418</dd></div>
+        <div><dt>Lines of source</dt><dd>68,092</dd></div>
+        <div><dt>Integration suites</dt><dd>43</dd></div>
+        <div><dt>Ignored tests</dt><dd>0</dd></div>
+      </dl>
+
+      <div class="suite">
+        <header><h3>Engine core</h3><span><b>281</b> tests</span></header>
+        <ul>
+          <li><code>tables</code><span>Typed tables, primary and secondary indexes, iteration that stays stable while rows change</span><em>27</em></li>
+          <li><code>sharded_host</code><span>Several shards in one process, routing, and what happens when one is removed</span><em>29</em></li>
+          <li><code>windows</code><span>Interest cells, the moving window, the per-window cell cap</span><em>22</em></li>
+          <li><code>snapshots</code><span>Checkpoints, base offsets, failed and cancelled snapshots cleaning up</span><em>19</em></li>
+          <li><code>commitlog</code><span>Record framing and torn-tail truncation</span><em>15</em></li>
+          <li><code>database</code><span>Replay determinism, kill and recover</span><em>15</em></li>
+          <li><code>reducers</code><span>Single writer, atomic commit and rollback, sender identity</span><em>15</em></li>
+          <li><code>subscriptions</code><span>Standing queries, initial snapshots, per-transaction deltas</span><em>14</em></li>
+          <li><code>operations</code><span>The exactly-once ledger: a retried operation returns its first result</span><em>14</em></li>
+          <li><code>shard_ownership</code><span>Ownership fencing and compare-and-set authority</span><em>14</em></li>
+          <li><code>remote_handover</code><span>Moving a player between hosts, refusals, retry cooldowns</span><em>12</em></li>
+          <li><code>event_streams</code><span>Transient streams and their rate limits</span><em>12</em></li>
+          <li><code>durability</code><span>Exact-boundary recovery and the group-commit contract</span><em>11</em></li>
+          <li><code>ephemeral</code><span>The split between logged and unlogged state</span><em>11</em></li>
+          <li><code>migration</code><span>Reopening a log under a newer schema</span><em>9</em></li>
+          <li><code>scheduler</code><span>Scheduled and cyclic reducers</span><em>9</em></li>
+          <li><code>ledger_retention</code><span>Rolling retention of the operation ledger and its memory plateau</span><em>5</em></li>
+        </ul>
+      </div>
+
+      <div class="suite">
+        <header><h3>Server</h3><span><b>279</b> tests</span></header>
+        <ul>
+          <li><code>signed_wal_replica</code><span>The signed replication endpoint, bounded refusals, disposal under load</span><em>37</em></li>
+          <li><code>signed_handover</code><span>Signed cross-host handover end to end</span><em>34</em></li>
+          <li><code>admission_gate</code><span>Connection admission, limits, backpressure accounting</span><em>26</em></li>
+          <li><code>production_auth</code><span>Production authentication mode and its failure paths</span><em>25</em></li>
+          <li><code>db_gate</code><span>The database protocol: handshake state machine, request ids, error frames</span><em>20</em></li>
+          <li><code>mmo_gate</code><span>Windows, streams and scheduled reducers over the wire</span><em>18</em></li>
+          <li><code>auth_tokens</code><span>Signed identity tokens and remembered-device sessions</span><em>11</em></li>
+          <li><code>echo_gate</code><span>WebSocket lifecycle and framing</span><em>10</em></li>
+          <li><code>auth_fixtures</code><span>Shared authentication fixtures and cross-checks</span><em>7</em></li>
+          <li><code>handover_exchange</code><span>The handover request and reply exchange</span><em>5</em></li>
+          <li><code>wal_admin</code><span>Operator commands for the replicated log</span><em>2</em></li>
+          <li><code>sdk_parity</code><span>The original C# client SDK talking to the Rust server unchanged</span><em>1</em></li>
+          <li><code>durability_gate</code><span>Durability observed from the client side</span><em>1</em></li>
+        </ul>
+      </div>
+
+      <div class="suite">
+        <header><h3>Replication</h3><span><b>66</b> tests</span></header>
+        <ul>
+          <li><code>replicated_wal</code><span>Acknowledgement, lag reporting, fencing of a host that lost ownership</span><em>40</em></li>
+          <li><code>replicated_wal_database</code><span>A database running on top of the replicated log</span><em>14</em></li>
+          <li><code>wal_replica_host</code><span>The standalone replica process</span><em>11</em></li>
+          <li><code>wal_operator</code><span>Operator tooling for the replica</span><em>1</em></li>
+        </ul>
+      </div>
+
+      <div class="suite">
+        <header><h3>Protocol</h3><span><b>63</b> tests</span></header>
+        <ul>
+          <li><code>roundtrip</code><span>Encode and decode every message type and get the same bytes back</span><em>26</em></li>
+          <li><code>rows</code><span>Row codec byte parity and bounds checks</span><em>14</em></li>
+          <li><code>frames</code><span>Frame bytes identical to the reference wire fixtures</span><em>13</em></li>
+        </ul>
+      </div>
+
+      <div class="suite">
+        <header><h3>Control plane and load generation</h3><span><b>93</b> tests</span></header>
+        <ul>
+          <li><code>control_plane</code><span>Ownership records, witness persistence and retry, compare-and-set against the store</span><em>38</em></li>
+          <li><code>game_loadgen</code><span>The load generator itself: movement, handover, loot, reconnect, the fan-out curve and the latency objective</span><em>30</em></li>
+          <li><code>bench_server</code><span>Benchmark server instrumentation</span><em>21</em></li>
+          <li><code>bench_lane</code><span>Benchmark run lanes and their output root</span><em>4</em></li>
+        </ul>
+        <p class="note">The crash-host crate is a tool for killing a database mid-write during recovery tests and has no tests of its own.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="row" id="status">
+    <p class="label">Where it stands</p>
+    <div class="body">
+      <p>WildNet began in C# and was rewritten in Rust during the summer of 2026. The Rust engine reached full parity with the original on 8 August 2026, including the replicated log, and has been the engine since. The C# client SDK is still used as a test instrument: the Rust server has to speak to it unchanged, which is how the wire format is kept honest.</p>
+      <p>Since parity, the work has been driven by the game's own load shape: ownership fencing, the replication-on performance ladder, and five layers of game workload that now cover movement, handover, durable loot, combat fan-out and delivery latency. The next input is a real trace from Wildmarks itself, which will replace the provisional envelope above with measured requirements.</p>
+    </div>
+  </section>
+
+  <section class="row" id="contact">
+    <p class="label">Contact</p>
+    <div class="body">
+      <p>Questions about the engine, or interest in using it for something that is not Wildmarks, are welcome.</p>
+      <a class="mail" href="mailto:support@wildmarks.net">support@wildmarks.net</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>© 2026 Wildmarks</p>
+  <p><a href="/">Back to Wildmarks</a></p>
+</footer>
+
+</body>
+</html>
