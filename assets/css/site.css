@@ -3,6 +3,7 @@
   --fg: #ededed;
   --fg-2: #8b8b8b;
   --fg-3: #5c5c5c;
+  --accent: #d4a84b;
   --line: rgba(255, 255, 255, 0.08);
   --col: 640px;
   --pad: clamp(20px, 6vw, 64px);
@@ -21,62 +22,65 @@ body {
   text-rendering: optimizeLegibility;
 }
 a { color: inherit; text-decoration: none; }
-p { margin: 0 0 1.25em; }
+img { display: block; }
+p { margin: 0 0 1.1em; }
 strong { font-weight: 500; color: var(--fg); }
 
 /* top */
 .top {
-  max-width: var(--col); margin: 0 auto; padding: 28px var(--pad) 0;
+  max-width: var(--col); margin: 0 auto; padding: 22px var(--pad) 0;
   display: flex; align-items: center; justify-content: space-between;
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
-.brand svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.top nav { display: flex; gap: 22px; font-size: 14px; color: var(--fg-2); }
-.top nav a:hover { color: var(--fg); }
+.brand img { width: 24px; height: auto; }
+.top nav { display: flex; gap: 20px; font-size: 14px; color: var(--fg-2); }
+.top nav a:hover { color: var(--accent); }
 
 /* column */
 main { max-width: var(--col); margin: 0 auto; padding: 0 var(--pad); }
-section { padding: 72px 0; border-top: 1px solid var(--line); }
+section { padding: 48px 0; border-top: 1px solid var(--line); }
 section:first-child { border-top: 0; }
 
-.label { font-size: 13px; color: var(--fg-3); margin: 0 0 24px; }
+.label { font-size: 13px; color: var(--accent); margin: 0 0 16px; }
 
 /* hero */
-.hero { padding: 128px 0 88px; }
+.hero { padding: 72px 0 56px; }
+.lockup { width: 240px; height: auto; margin: 0 0 40px; }
 .hero h1 {
-  font-size: clamp(32px, 2rem + 2.2vw, 48px); font-weight: 600; line-height: 1.12; letter-spacing: -0.025em;
-  margin: 0 0 24px;
+  font-size: clamp(30px, 2rem + 2vw, 44px); font-weight: 600; line-height: 1.14; letter-spacing: -0.025em;
+  margin: 0 0 18px;
 }
-.sub { font-size: 18px; color: var(--fg-2); margin: 0; max-width: 34em; }
+.sub { font-size: 17px; color: var(--fg-2); margin: 0; max-width: 34em; }
 
 /* text */
 section p { color: var(--fg-2); }
 section p strong { color: var(--fg); }
 .quiet { color: var(--fg-3); margin: 0; }
 section p:last-of-type { margin-bottom: 0; }
-section p + .quiet { margin-top: 28px; }
+section p + .quiet { margin-top: 20px; }
 
-.list { list-style: none; margin: 0 0 28px; padding: 0; }
-.list li { padding: 14px 0; border-top: 1px solid var(--line); color: var(--fg-2); }
+.list { list-style: none; margin: 0 0 20px; padding: 0; }
+.list li { padding: 10px 0; border-top: 1px solid var(--line); color: var(--fg-2); }
 .list li:first-child { border-top: 0; padding-top: 0; }
 
-.facts { margin: 32px 0 0; border-top: 1px solid var(--line); }
-.facts > div { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.facts { margin: 24px 0 0; border-top: 1px solid var(--line); }
+.facts > div { display: grid; grid-template-columns: 140px 1fr; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .facts dt { color: var(--fg-3); margin: 0; }
 .facts dd { margin: 0; color: var(--fg-2); }
 
 /* contact */
-.mail { font-size: clamp(22px, 1.2rem + 1.6vw, 32px); font-weight: 500; letter-spacing: -0.02em; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
-.mail:hover { border-color: var(--fg); }
+.mail { font-size: clamp(22px, 1.2rem + 1.4vw, 30px); font-weight: 500; letter-spacing: -0.02em; border-bottom: 1px solid var(--accent); padding-bottom: 2px; }
+.mail:hover { color: var(--accent); }
 
 footer {
-  max-width: var(--col); margin: 0 auto; padding: 32px var(--pad) 48px;
+  max-width: var(--col); margin: 0 auto; padding: 24px var(--pad) 40px;
   border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   font-size: 13px; color: var(--fg-3);
 }
 footer p { margin: 0; }
 
 @media (max-width: 520px) {
-  .hero { padding-top: 96px; }
+  .hero { padding-top: 56px; }
+  .lockup { width: 200px; margin-bottom: 32px; }
   .facts > div { grid-template-columns: 1fr; gap: 2px; }
 }
