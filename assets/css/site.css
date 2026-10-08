@@ -185,16 +185,19 @@ strong { color: var(--ink); font-weight: 600; }
 .gear-copy p { color: var(--ink-2); }
 .gear-row {
   list-style: none; padding: 0; margin: 0;
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px;
 }
 .gear-row li {
-  aspect-ratio: 1; display: grid; place-items: center; padding: 18px;
+  position: relative; aspect-ratio: 1; min-width: 0; overflow: hidden;
   border-radius: var(--radius); border: 1px solid var(--line);
   background: radial-gradient(70% 70% at 50% 60%, rgba(138,107,214,.18), rgba(21,26,34,.6) 70%);
   transition: border-color .25s, transform .25s;
 }
 .gear-row li:hover { border-color: rgba(138,107,214,.6); transform: translateY(-3px); }
-.gear-row img { max-height: 100%; width: auto; filter: drop-shadow(0 14px 22px rgba(0,0,0,.6)); }
+.gear-row img {
+  position: absolute; inset: 12%; width: 76%; height: 76%; object-fit: contain;
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,.6));
+}
 
 /* Gallery */
 .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 48px; }
@@ -240,7 +243,7 @@ strong { color: var(--ink); font-weight: 600; }
 .contact { text-align: center; padding-bottom: clamp(80px, 10vw, 140px); }
 .contact .seal-lg { width: 64px; height: 64px; margin: 0 auto 22px; opacity: .9; }
 .mail {
-  display: inline-block; margin-top: 10px; font-family: var(--font-display); font-size: clamp(1.2rem, 1rem + 1.6vw, 2rem); letter-spacing: .04em;
+  display: inline-block; margin-top: 10px; font-family: var(--font-body); font-weight: 500; font-size: clamp(1.15rem, 1rem + 1.2vw, 1.7rem); letter-spacing: .01em;
   color: var(--gold-2); border-bottom: 1px solid rgba(240,196,107,.4); padding-bottom: 4px; transition: border-color .2s, color .2s;
 }
 .mail:hover { color: #fff; border-color: #fff; }
@@ -281,8 +284,7 @@ strong { color: var(--ink); font-weight: 600; }
   .chapters, .pillars, .roadmap, .gallery { grid-template-columns: 1fr; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .tech-stats { grid-template-columns: 1fr 1fr; }
-  .gear-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .gear-row li { padding: 10px; }
+  .gear-row { gap: 10px; }
   .hero { padding: 110px 0 90px; }
   .footer-row { flex-direction: column; }
 }
