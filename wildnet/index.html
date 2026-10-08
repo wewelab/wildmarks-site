@@ -43,7 +43,7 @@
   <section class="title">
     <p class="label">WildNet</p>
     <h1>The server underneath Wildmarks.</h1>
-    <p class="sub">A game server and network engine we wrote for one game, in Rust. This page explains why it exists, how it works, what it has achieved so far, what the test suite checks, and where it is going.</p>
+    <p class="sub">A game server and network engine we wrote for one game. It began in C#, was moved to Rust from scratch, and continues in Rust. This page explains why it exists, how it works, what it has achieved so far, what the test suite checks, and where it is going.</p>
   </section>
 
   <section class="row" id="why">
@@ -194,8 +194,8 @@
     <p class="label">What has been done</p>
     <div class="body">
       <ul class="dated">
-        <li><time>5 Aug 2026</time><p><strong>The rewrite begins.</strong> WildNet existed in C#. The Rust rewrite started from an empty repository with one rule: every slice ends with the original's regression tests green against the new engine, byte for byte on the wire.</p></li>
-        <li><time>8 Aug 2026</time><p><strong>Full parity.</strong> The Rust engine matched the original on every milestone, all 24 hardening slices and the 15-slice replicated-log arc, with 666 tests passing. From this day the Rust engine is WildNet.</p></li>
+        <li><time>2025</time><p><strong>WildNet in C#.</strong> We wrote the first WildNet ourselves, in C#: the in-memory tables, the commit log, reducers, subscriptions, interest windows, sharding, signed handover and the replicated log, each with its own regression tests. The first Wildmarks builds ran on it.</p></li>
+        <li><time>Aug 2026</time><p><strong>The move to Rust.</strong> With Claude's help we ported the engine to Rust from scratch, slice by slice, with one rule: every slice ends with the original's regression tests green against the new engine, byte for byte on the wire. On 8 August 2026 the port matched the original on every milestone, all 24 hardening slices and the 15-slice replicated-log arc, with 666 tests passing. From that day the Rust engine is WildNet, and all work since is in Rust.</p></li>
         <li><time>9 Aug 2026</time><p><strong>The head-to-head.</strong> On dedicated hardware, ahead on every criterion of the short matrix against an established engine, with equal correctness over 600,000 contested attempts and 2,400 abrupt-kill retries.</p></li>
         <li><time>9 Aug 2026</time><p><strong>Five layers of game workload.</strong> Movement, zoned handover, durable loot and reconnect; combat fan-out with contested loot; a 75-cycle long run with CPU and memory observation; the slow-peer isolation curve; the paced delivery-latency objective. All exact.</p></li>
         <li><time>9 Aug 2026</time><p><strong>Memory plateau proven.</strong> The ledger growth flagged in the soak was reproduced in a targeted retention test, shown to plateau, and then hardened.</p></li>
